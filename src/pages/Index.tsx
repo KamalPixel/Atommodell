@@ -1,8 +1,14 @@
-
+import { useState } from 'react';
 import PeriodicTable from '../components/PeriodicTable';
-import { Atom } from 'lucide-react';
+import ElementQuiz from '../components/ElementQuiz';
+import ElementSearch from '../components/ElementSearch';
+import Statistics from '../components/Statistics';
+import { Atom, FlaskConical, GraduationCap, Search, BarChart3 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 
 const Index = () => {
+  const [activeTab, setActiveTab] = useState('periodic-table');
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-950 text-white py-4 px-4 relative overflow-hidden">
       {/* Background elements for futuristic look */}
@@ -11,30 +17,81 @@ const Index = () => {
         <div className="absolute bottom-10 right-10 w-72 h-72 rounded-full bg-blue-500 blur-[100px]"></div>
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-cyan-500 blur-[120px] opacity-20"></div>
       </div>
-      
+
       {/* Grid background */}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0wIDBoNjB2NjBIMHoiLz48cGF0aCBkPSJNMzAgMzBoMzB2MzBIMzB6IiBzdHJva2Utb3BhY2l0eT0iLjEiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIuNSIvPjxwYXRoIGQ9Ik0wIDMwaDMwdjMwSDB6IiBzdHJva2Utb3BhY2l0eT0iLjEiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIuNSIvPjxwYXRoIGQ9Ik0wIDBoMzB2MzBIMHoiIHN0cm9rZS1vcGFjaXR5PSIuMSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9Ii41Ii8+PHBhdGggZD0iTTMwIDBoMzB2MzBIMzB6IiBzdHJva2Utb3BhY2l0eT0iLjEiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIuNSIvPjwvZz48L3N2Zz4=')] opacity-5"></div>
-      
+
       <div className="container mx-auto relative z-10">
         <div className="text-center mb-4">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Atom className="text-cyan-400 h-8 w-8" />
             <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 tracking-tight">
-              Dynamsisk Periodesystem
+              Dynamisk Periodesystem
             </h1>
             <Atom className="text-cyan-400 h-8 w-8" />
           </div>
           <p className="text-lg text-gray-300 max-w-3xl mx-auto font-light tracking-wide">
-           Sjekk ut grunnstoffene i periodesystemet med vår visualisering!. Hold musepekeren over et grunnstoff 
-            for å se detaljert informasjon og atomstruktur.
+            Utforsk grunnstoffene interaktivt og test kunnskapen din med quiz-modulen.
           </p>
         </div>
-        
-        <PeriodicTable />
-        
-        <div className="mt-6 text-center">
-          <p className="text-cyan-400/80 text-sm max-w-3xl mx-auto italic">
-          Dette interaktive periodesystemet er inspirert av en fysikkoppgave. Det var da jeg fikk ideen til å visualisere det på en dynamisk måte.
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-4 bg-gray-800/50 border border-cyan-400/20 mb-6">
+            <TabsTrigger
+              value="periodic-table"
+              className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-gray-400"
+            >
+              <FlaskConical className="w-4 h-4 mr-2" />
+              Periodesystem
+            </TabsTrigger>
+            <TabsTrigger
+              value="search"
+              className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-gray-400"
+            >
+              <Search className="w-4 h-4 mr-2" />
+              Utforsk
+            </TabsTrigger>
+            <TabsTrigger
+              value="quiz"
+              className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-gray-400"
+            >
+              <GraduationCap className="w-4 h-4 mr-2" />
+              Quiz
+            </TabsTrigger>
+            <TabsTrigger
+              value="stats"
+              className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-gray-400"
+            >
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Statistikk
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="periodic-table" className="mt-0">
+            <PeriodicTable />
+            <div className="mt-6 text-center">
+              <p className="text-cyan-400/80 text-sm max-w-3xl mx-auto italic">
+                Hold musepekeren over et grunnstoff for å se detaljert informasjon og atomstruktur.
+              </p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="search" className="mt-0">
+            <ElementSearch />
+          </TabsContent>
+
+          <TabsContent value="quiz" className="mt-0">
+            <ElementQuiz />
+          </TabsContent>
+
+          <TabsContent value="stats" className="mt-0">
+            <Statistics />
+          </TabsContent>
+        </Tabs>
+
+        <div className="mt-8 text-center">
+          <p className="text-gray-500 text-xs">
+            Bygget med React, TypeScript og p5.js
           </p>
         </div>
       </div>
