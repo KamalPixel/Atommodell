@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import p5 from 'p5';
 import { elementData } from '../data/elementData';
 import { Card, CardContent } from './ui/card';
+import BohrModel from './BohrModel';
 
 interface SelectedElement {
   atomicNumber: number;
@@ -52,7 +53,6 @@ const PeriodicTable: React.FC = () => {
       const tablePadding = Math.max(5, cellSize * 0.5);
       const fontSize = Math.max(6, cellSize * 0.3);
       let hoveredElement: typeof elementData[0] | null = null;
-      let animationAngle = 0;
 
       const canvasWidth = dimensions.width;
       const canvasHeight = dimensions.height;
@@ -98,14 +98,15 @@ const PeriodicTable: React.FC = () => {
         canvas.parent(containerRef.current!);
         p.textAlign(p.CENTER, p.CENTER);
         p.textFont('Inter, system-ui, sans-serif');
+        p.pixelDensity(window.devicePixelRatio || 1);
       };
 
       p.draw = () => {
-        p.background('#121212');
+        p.background('#0a0a0f');
 
-        // Draw subtle grid
-        p.stroke(40, 40, 50, 30);
-        p.strokeWeight(0.3);
+        // Draw subtle animated grid
+        p.stroke(30, 35, 50, 40);
+        p.strokeWeight(0.5);
         const gridSize = cellSize;
         for (let x = 0; x < canvasWidth; x += gridSize) {
           p.line(x, 0, x, canvasHeight);
@@ -122,22 +123,27 @@ const PeriodicTable: React.FC = () => {
           const cellColor = p.color(getCategoryColor(element.category));
 
           if (isHovered) {
+            // Hovered state - bright with glow
+            p.drawingContext.shadowBlur = 20;
+            p.drawingContext.shadowColor = getCategoryColor(element.category);
+
             p.fill(p.red(cellColor), p.green(cellColor), p.blue(cellColor), 255);
             p.stroke('#00FFFF');
             p.strokeWeight(2);
 
-            // Glow effect
-            p.drawingContext.shadowBlur = 15;
-            p.drawingContext.shadowColor = getCategoryColor(element.category);
-          } else {
-            p.fill(p.red(cellColor), p.green(cellColor), p.blue(cellColor), 180);
-            p.stroke(255, 50);
-            p.strokeWeight(0.5);
-            p.drawingContext.shadowBlur = 0;
-          }
+            // Scale effect - draw slightly larger
+            const scale = 1.1;
+            const scaledSize = cellSize * scale;
+            const offset = (scaledSize - cellSize) / 2;
+            p.rect(x - offset, y - offset, scaledSize, scaledSize, 4);
 
-          p.rect(x, y, cellSize, cellSize, 3);
-          p.drawingContext.shadowBlur = 0;
+            p.drawingContext.shadowBlur = 0;
+          } else {
+            p.fill(p.red(cellColor), p.green(cellColor), p.blue(cellColor), 160);
+            p.stroke(255, 30);
+            p.strokeWeight(0.5);
+            p.rect(x, y, cellSize, cellSize, 3);
+          }
 
           // Element content
           p.noStroke();
@@ -175,84 +181,6 @@ const PeriodicTable: React.FC = () => {
           p.textAlign(p.RIGHT, p.CENTER);
           p.text('La-Lu', 2.8 * (cellSize + padding) + tablePadding, 8.5 * (cellSize + padding) + tablePadding + cellSize / 2);
           p.text('Ac-Lr', 2.8 * (cellSize + padding) + tablePadding, 9.5 * (cellSize + padding) + tablePadding + cellSize / 2);
-        }
-
-        // Draw Bohr model animation when hovering
-        if (hoveredElement) {
-          const atomCenterX = canvasWidth - 80;
-          const atomCenterY = 80;
-          const maxRadius = 60;
-
-          // Parse electron configuration to get electron shells
-          const getElectronShells = (atomicNumber: number): number[] => {
-            const shells: number[] = [];
-            const config = [2, 8, 18, 32, 32, 18, 8]; // Max electrons per shell
-            let remaining = atomicNumber;
-            for (let i = 0; i < config.length && remaining > 0; i++) {
-              const electrons = Math.min(remaining, config[i]);
-              shells.push(electrons);
-              remaining -= electrons;
-            }
-            return shells;
-          };
-
-          const shells = getElectronShells(hoveredElement.atomicNumber);
-          const categoryColor = p.color(getCategoryColor(hoveredElement.category));
-
-          // Draw semi-transparent background circle
-          p.fill(20, 20, 30, 200);
-          p.stroke(p.red(categoryColor), p.green(categoryColor), p.blue(categoryColor), 100);
-          p.strokeWeight(2);
-          p.circle(atomCenterX, atomCenterY, maxRadius * 2 + 20);
-
-          // Draw nucleus
-          p.fill(categoryColor);
-          p.noStroke();
-          const nucleusSize = Math.min(20, 8 + hoveredElement.atomicNumber * 0.1);
-          p.circle(atomCenterX, atomCenterY, nucleusSize);
-
-          // Draw nucleus glow
-          p.drawingContext.shadowBlur = 15;
-          p.drawingContext.shadowColor = getCategoryColor(hoveredElement.category);
-          p.circle(atomCenterX, atomCenterY, nucleusSize);
-          p.drawingContext.shadowBlur = 0;
-
-          // Draw electron shells and electrons
-          shells.forEach((electronCount, shellIndex) => {
-            const shellRadius = 15 + (shellIndex + 1) * (maxRadius - 15) / shells.length;
-
-            // Draw orbit path
-            p.noFill();
-            p.stroke(100, 100, 120, 80);
-            p.strokeWeight(1);
-            p.circle(atomCenterX, atomCenterY, shellRadius * 2);
-
-            // Draw electrons on this shell
-            for (let i = 0; i < electronCount; i++) {
-              const angle = animationAngle * (1 + shellIndex * 0.3) + (i * p.TWO_PI / electronCount);
-              const electronX = atomCenterX + Math.cos(angle) * shellRadius;
-              const electronY = atomCenterY + Math.sin(angle) * shellRadius;
-
-              // Electron glow
-              p.fill(0, 255, 255, 100);
-              p.noStroke();
-              p.circle(electronX, electronY, 8);
-
-              // Electron core
-              p.fill(0, 255, 255);
-              p.circle(electronX, electronY, 4);
-            }
-          });
-
-          // Draw element symbol in center
-          p.fill(255);
-          p.textSize(10);
-          p.textAlign(p.CENTER, p.CENTER);
-          p.textStyle(p.BOLD);
-          p.text(hoveredElement.symbol, atomCenterX, atomCenterY);
-          p.textStyle(p.NORMAL);
-
-          animationAngle += 0.02;
         }
       };
 
@@ -349,7 +277,7 @@ const PeriodicTable: React.FC = () => {
     return translations[state] || state;
   };
 
-  const getCategoryColor = (category: string): string => {
+  const getCategoryColorClass = (category: string): string => {
     const colors: Record<string, string> = {
       'alkali metal': 'bg-pink-500',
       'alkaline earth metal': 'bg-yellow-500',
@@ -367,26 +295,58 @@ const PeriodicTable: React.FC = () => {
 
   return (
     <div className="w-full flex flex-col gap-4">
-      {/* Periodic Table Canvas */}
-      <div
-        ref={containerRef}
-        className="w-full border border-cyan-400/20 rounded-lg overflow-hidden shadow-2xl shadow-cyan-500/10 backdrop-blur-sm bg-gray-900/50"
-        style={{ minHeight: '300px' }}
-      />
+      {/* Main layout: Table + Bohr Model */}
+      <div className="flex flex-col lg:flex-row gap-4">
+        {/* Periodic Table Canvas */}
+        <div className="flex-1 min-w-0">
+          <div
+            ref={containerRef}
+            className="w-full border border-cyan-400/20 rounded-xl overflow-hidden shadow-2xl shadow-cyan-500/10 backdrop-blur-sm bg-gray-900/50 transition-shadow duration-300 hover:shadow-cyan-500/20"
+            style={{ minHeight: '300px' }}
+          />
+        </div>
 
-      {/* Element Details Card - Shows below on all screen sizes */}
+        {/* Bohr Model - Sticky on desktop */}
+        <div className="lg:w-72 xl:w-80 flex-shrink-0">
+          <div className="lg:sticky lg:top-4 h-fit">
+            <Card className="bg-gray-900/80 border-cyan-400/20 backdrop-blur-sm overflow-hidden">
+              <CardContent className="p-4">
+                <h3 className="text-sm font-medium text-gray-400 mb-3 text-center">
+                  Atommodell
+                </h3>
+                <div className="aspect-square w-full max-w-[280px] mx-auto">
+                  <BohrModel
+                    element={
+                      selectedElement
+                        ? {
+                            atomicNumber: selectedElement.atomicNumber,
+                            symbol: selectedElement.symbol,
+                            name: selectedElement.name,
+                            category: selectedElement.category,
+                          }
+                        : null
+                    }
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+
+      {/* Element Details Card */}
       {selectedElement ? (
-        <Card className="bg-gray-800/80 border-cyan-400/30 animate-in fade-in duration-200">
+        <Card className="bg-gray-800/80 border-cyan-400/30 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
           <CardContent className="p-4 md:p-6">
             <div className="flex flex-col md:flex-row md:items-start gap-4">
               {/* Element Symbol and Name */}
               <div className="flex items-center gap-4">
                 <div
-                  className={`w-16 h-16 md:w-20 md:h-20 rounded-lg flex items-center justify-center ${getCategoryColor(
+                  className={`w-16 h-16 md:w-20 md:h-20 rounded-xl flex items-center justify-center shadow-lg transition-transform duration-200 hover:scale-105 ${getCategoryColorClass(
                     selectedElement.category
                   )}`}
                 >
-                  <span className="text-2xl md:text-3xl font-bold text-white">
+                  <span className="text-2xl md:text-3xl font-bold text-white drop-shadow-md">
                     {selectedElement.symbol}
                   </span>
                 </div>
@@ -397,7 +357,7 @@ const PeriodicTable: React.FC = () => {
                   <p className="text-sm text-gray-400">
                     Atomnummer {selectedElement.atomicNumber}
                   </p>
-                  <p className="text-xs text-cyan-400">
+                  <p className="text-xs text-cyan-400 font-medium">
                     {translateCategory(selectedElement.category)}
                   </p>
                 </div>
@@ -405,26 +365,26 @@ const PeriodicTable: React.FC = () => {
 
               {/* Element Properties Grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 flex-1">
-                <div className="bg-gray-900/50 rounded-lg p-3">
-                  <p className="text-xs text-gray-500">Atomvekt</p>
+                <div className="bg-gray-900/60 rounded-lg p-3 border border-gray-700/50 transition-colors hover:border-cyan-400/30">
+                  <p className="text-xs text-gray-500 mb-1">Atomvekt</p>
                   <p className="text-sm md:text-base text-white font-medium">
                     {selectedElement.atomicWeight}
                   </p>
                 </div>
-                <div className="bg-gray-900/50 rounded-lg p-3">
-                  <p className="text-xs text-gray-500">Tilstand</p>
+                <div className="bg-gray-900/60 rounded-lg p-3 border border-gray-700/50 transition-colors hover:border-cyan-400/30">
+                  <p className="text-xs text-gray-500 mb-1">Tilstand</p>
                   <p className="text-sm md:text-base text-white font-medium">
                     {translateState(selectedElement.state)}
                   </p>
                 </div>
-                <div className="bg-gray-900/50 rounded-lg p-3">
-                  <p className="text-xs text-gray-500">Oppdaget</p>
+                <div className="bg-gray-900/60 rounded-lg p-3 border border-gray-700/50 transition-colors hover:border-cyan-400/30">
+                  <p className="text-xs text-gray-500 mb-1">Oppdaget</p>
                   <p className="text-sm md:text-base text-white font-medium">
                     {selectedElement.yearDiscovered}
                   </p>
                 </div>
-                <div className="bg-gray-900/50 rounded-lg p-3 col-span-2 md:col-span-1">
-                  <p className="text-xs text-gray-500">Elektronkonfigurasjon</p>
+                <div className="bg-gray-900/60 rounded-lg p-3 border border-gray-700/50 col-span-2 md:col-span-1 transition-colors hover:border-cyan-400/30">
+                  <p className="text-xs text-gray-500 mb-1">Elektronkonfigurasjon</p>
                   <p className="text-sm md:text-base text-cyan-400 font-mono truncate">
                     {selectedElement.electronConfiguration}
                   </p>
@@ -434,7 +394,7 @@ const PeriodicTable: React.FC = () => {
           </CardContent>
         </Card>
       ) : (
-        <Card className="bg-gray-800/50 border-cyan-400/20">
+        <Card className="bg-gray-800/50 border-cyan-400/20 backdrop-blur-sm">
           <CardContent className="p-4 text-center">
             <p className="text-gray-400 text-sm">
               Hold musepekeren over eller trykk på et grunnstoff for å se detaljer
@@ -444,7 +404,7 @@ const PeriodicTable: React.FC = () => {
       )}
 
       {/* Legend */}
-      <div className="flex flex-wrap justify-center gap-2 md:gap-3">
+      <div className="flex flex-wrap justify-center gap-2 md:gap-3 p-3 bg-gray-900/30 rounded-lg border border-gray-800/50">
         {[
           { name: 'Alkalimetall', color: 'bg-pink-500' },
           { name: 'Jordalkalimetall', color: 'bg-yellow-500' },
@@ -456,8 +416,8 @@ const PeriodicTable: React.FC = () => {
           { name: 'Lantanid', color: 'bg-fuchsia-500' },
           { name: 'Aktinid', color: 'bg-sky-500' },
         ].map((cat) => (
-          <div key={cat.name} className="flex items-center gap-1">
-            <div className={`w-3 h-3 rounded ${cat.color}`} />
+          <div key={cat.name} className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-gray-800/50 transition-colors cursor-default">
+            <div className={`w-3 h-3 rounded-sm ${cat.color} shadow-sm`} />
             <span className="text-xs text-gray-400">{cat.name}</span>
           </div>
         ))}
