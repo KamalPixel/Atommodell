@@ -58,10 +58,4 @@ src/
 - [ ] Flere quiz-typer
 - [ ] Gjøre det til en PWA
 
-## Hva jeg lærte
 
-Dette var første gang jeg brukte p5.js og det var litt tricky å få det til å funke med React. Også lærte jeg mye om state management og localStorage.
-
----
-
-Laget av en dataingeniørstudent som prøver å forstå både React og kjemi samtidig :)
