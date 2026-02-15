@@ -52,6 +52,7 @@ const PeriodicTable: React.FC = () => {
       const tablePadding = Math.max(5, cellSize * 0.5);
       const fontSize = Math.max(6, cellSize * 0.3);
       let hoveredElement: typeof elementData[0] | null = null;
+      let animationAngle = 0;
 
       const canvasWidth = dimensions.width;
       const canvasHeight = dimensions.height;
@@ -121,7 +122,7 @@ const PeriodicTable: React.FC = () => {
           const cellColor = p.color(getCategoryColor(element.category));
 
           if (isHovered) {
-            p.fill(cellColor.levels[0], cellColor.levels[1], cellColor.levels[2], 255);
+            p.fill(p.red(cellColor), p.green(cellColor), p.blue(cellColor), 255);
             p.stroke('#00FFFF');
             p.strokeWeight(2);
 
@@ -129,7 +130,7 @@ const PeriodicTable: React.FC = () => {
             p.drawingContext.shadowBlur = 15;
             p.drawingContext.shadowColor = getCategoryColor(element.category);
           } else {
-            p.fill(cellColor.levels[0], cellColor.levels[1], cellColor.levels[2], 180);
+            p.fill(p.red(cellColor), p.green(cellColor), p.blue(cellColor), 180);
             p.stroke(255, 50);
             p.strokeWeight(0.5);
             p.drawingContext.shadowBlur = 0;
@@ -174,6 +175,84 @@ const PeriodicTable: React.FC = () => {
           p.textAlign(p.RIGHT, p.CENTER);
           p.text('La-Lu', 2.8 * (cellSize + padding) + tablePadding, 8.5 * (cellSize + padding) + tablePadding + cellSize / 2);
           p.text('Ac-Lr', 2.8 * (cellSize + padding) + tablePadding, 9.5 * (cellSize + padding) + tablePadding + cellSize / 2);
+        }
+
+        // Draw Bohr model animation when hovering
+        if (hoveredElement) {
+          const atomCenterX = canvasWidth - 80;
+          const atomCenterY = 80;
+          const maxRadius = 60;
+
+          // Parse electron configuration to get electron shells
+          const getElectronShells = (atomicNumber: number): number[] => {
+            const shells: number[] = [];
+            const config = [2, 8, 18, 32, 32, 18, 8]; // Max electrons per shell
+            let remaining = atomicNumber;
+            for (let i = 0; i < config.length && remaining > 0; i++) {
+              const electrons = Math.min(remaining, config[i]);
+              shells.push(electrons);
+              remaining -= electrons;
+            }
+            return shells;
+          };
+
+          const shells = getElectronShells(hoveredElement.atomicNumber);
+          const categoryColor = p.color(getCategoryColor(hoveredElement.category));
+
+          // Draw semi-transparent background circle
+          p.fill(20, 20, 30, 200);
+          p.stroke(p.red(categoryColor), p.green(categoryColor), p.blue(categoryColor), 100);
+          p.strokeWeight(2);
+          p.circle(atomCenterX, atomCenterY, maxRadius * 2 + 20);
+
+          // Draw nucleus
+          p.fill(categoryColor);
+          p.noStroke();
+          const nucleusSize = Math.min(20, 8 + hoveredElement.atomicNumber * 0.1);
+          p.circle(atomCenterX, atomCenterY, nucleusSize);
+
+          // Draw nucleus glow
+          p.drawingContext.shadowBlur = 15;
+          p.drawingContext.shadowColor = getCategoryColor(hoveredElement.category);
+          p.circle(atomCenterX, atomCenterY, nucleusSize);
+          p.drawingContext.shadowBlur = 0;
+
+          // Draw electron shells and electrons
+          shells.forEach((electronCount, shellIndex) => {
+            const shellRadius = 15 + (shellIndex + 1) * (maxRadius - 15) / shells.length;
+
+            // Draw orbit path
+            p.noFill();
+            p.stroke(100, 100, 120, 80);
+            p.strokeWeight(1);
+            p.circle(atomCenterX, atomCenterY, shellRadius * 2);
+
+            // Draw electrons on this shell
+            for (let i = 0; i < electronCount; i++) {
+              const angle = animationAngle * (1 + shellIndex * 0.3) + (i * p.TWO_PI / electronCount);
+              const electronX = atomCenterX + Math.cos(angle) * shellRadius;
+              const electronY = atomCenterY + Math.sin(angle) * shellRadius;
+
+              // Electron glow
+              p.fill(0, 255, 255, 100);
+              p.noStroke();
+              p.circle(electronX, electronY, 8);
+
+              // Electron core
+              p.fill(0, 255, 255);
+              p.circle(electronX, electronY, 4);
+            }
+          });
+
+          // Draw element symbol in center
+          p.fill(255);
+          p.textSize(10);
+          p.textAlign(p.CENTER, p.CENTER);
+          p.textStyle(p.BOLD);
+          p.text(hoveredElement.symbol, atomCenterX, atomCenterY);
+          p.textStyle(p.NORMAL);
+
+          animationAngle += 0.02;
         }
       };
 
